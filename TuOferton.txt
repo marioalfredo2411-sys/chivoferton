@@ -1,0 +1,25 @@
+TuOferton
+
+Scrap los datos de venta/renta de casa disponible
+- Teencuentra24.com
+
+agrupar viviendas por zonas
+Depto - Municipio - Sector
+
+Estos que tengan el nombre del Depto y muestre cantidad de disponibilidad esta hacia el interno
+
+1. Inicial Scraping
+Adquirir los ultimos 100 venta/renta de viviendas, crear un esquema de datos con base a los resultados comunes, en formato json, crear el codigo en base python, entre compra y alquiles pueden haber diferentes campos, pero el esquema debe soportar ambos en json.
+
+1.1 Agregar el link a la publicacion original
+
+2. Hacer mockup de la idea en general
+
+3. Base de datos a utilizar
+3.1 Asignar un ID para cada publicacion
+
+4. Identificar una inactiva luego modificar base de datos para inactivarla
+
+5. Fn en DB para calcular con base a tiempo (30 dias, 3 semanas, etc) y locations para calcular las ofertas mas comodas y caras en base al tiempo.
+
+6. 

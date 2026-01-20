@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Housing Data Dashboard - El Salvador</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #a0a0a0;
+            font-size: 1.1rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 25px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 217, 255, 0.2);
+        }
+
+        .stat-card .number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-card .label {
+            color: #a0a0a0;
+            margin-top: 5px;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #00d9ff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 30px;
+            background: linear-gradient(180deg, #00d9ff, #00ff88);
+            border-radius: 2px;
+        }
+
+        .location-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .location-card {
+            background: rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .location-card:hover {
+            background: rgba(0, 217, 255, 0.1);
+            border-color: #00d9ff;
+            transform: scale(1.02);
+        }
+
+        .location-card .location-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .location-card .price-range {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .location-card .price-label {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .location-card .price-value {
+            font-weight: 600;
+            color: #00ff88;
+        }
+
+        .location-card .count-badge {
+            display: inline-block;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin: 15px 0;
+            overflow: hidden;
+        }
+
+        .progress-bar .fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .modal-content {
+            background: #1a1a2e;
+            border-radius: 20px;
+            max-width: 1200px;
+            width: 100%;
+            margin: 40px auto;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-header h2 {
+            color: #00d9ff;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .close-btn:hover {
+            color: #ff6b6b;
+        }
+
+        .listings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .listing-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s;
+        }
+
+        .listing-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .listing-card .image-container {
+            height: 200px;
+            background: #2a2a4a;
+            overflow: hidden;
+        }
+
+        .listing-card .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .listing-card .info {
+            padding: 20px;
+        }
+
+        .listing-card .price {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #00ff88;
+            margin-bottom: 10px;
+        }
+
+        .listing-card .title {
+            font-size: 1rem;
+            color: #ddd;
+            margin-bottom: 10px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .listing-card .specs {
+            display: flex;
+            gap: 15px;
+            color: #888;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+
+        .listing-card .specs span {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .listing-card .view-btn {
+            display: inline-block;
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.3s;
+        }
+
+        .listing-card .view-btn:hover {
+            opacity: 0.9;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .type-badge.sale {
+            background: rgba(0, 255, 136, 0.2);
+            color: #00ff88;
+        }
+
+        .type-badge.rent {
+            background: rgba(0, 217, 255, 0.2);
+            color: #00d9ff;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(90deg, #00d9ff, #00ff88);
+            color: #1a1a2e;
+        }
+
+        .no-image {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8rem;
+            }
+
+            .location-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .listings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🏠 Housing Data Dashboard</h1>
+            <p>El Salvador Real Estate Listings - Encuentra24</p>
+        </header>
+
+        <div class="stats-grid" id="statsGrid">
+            <!-- Stats will be populated by JS -->
+        </div>
+
+        <h2 class="section-title">Listings by Location</h2>
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-filter="all">All</button>
+            <button class="filter-tab" data-filter="sale">For Sale</button>
+            <button class="filter-tab" data-filter="rent">For Rent</button>
+        </div>
+        <div class="location-grid" id="locationGrid">
+            <!-- Location cards will be populated by JS -->
+        </div>
+    </div>
+
+    <!-- Modal for listings -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Listings</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="listings-grid" id="listingsGrid">
+                <!-- Listings will be populated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Load data from sample.json
+        let allListings = [];
+        let currentFilter = 'all';
+
+        async function loadData() {
+            try {
+                const response = await fetch('C:\Users\mario.hernandez\Documents\TuOfertonsample.json');
+                allListings = await response.json();
+                processData();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('locationGrid').innerHTML =
+                    '<p style="color:#ff6b6b;">Error loading data. Make sure sample.json is in the same folder.</p>';
+            }
+        }
+
+        function extractLocation(listing) {
+            // Try to extract location from title (format: "... en Location")
+            const title = listing.title || '';
+            const match = title.match(/en\s+([^|]+)$/i);
+            if (match) {
+                return match[1].trim();
+            }
+            // Fallback to location field or details
+            if (listing.location) return listing.location;
+            if (listing.details && listing.details['Localización']) {
+                return listing.details['Localización'];
+            }
+            return 'Unknown';
+        }
+
+        function parsePrice(priceStr) {
+            if (!priceStr) return 0;
+            const match = priceStr.replace(/,/g, '').match(/[\d.]+/);
+            return match ? parseFloat(match[0]) : 0;
+        }
+
+        function formatPrice(price) {
+            return '$' + price.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+
+        function processData() {
+            const filtered = currentFilter === 'all'
+                ? allListings
+                : allListings.filter(l => l.listing_type === currentFilter);
+
+            // Calculate stats
+            const totalListings = filtered.length;
+            const saleCount = filtered.filter(l => l.listing_type === 'sale').length;
+            const rentCount = filtered.filter(l => l.listing_type === 'rent').length;
+            const prices = filtered.map(l => parsePrice(l.price)).filter(p => p > 0);
+            const avgPrice = prices.length > 0 ? prices.reduce((a, b) => a + b, 0) / prices.length : 0;
+
+            document.getElementById('statsGrid').innerHTML = `
+                <div class="stat-card">
+                    <div class="number">${totalListings}</div>
+                    <div class="label">Total Listings</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">${saleCount}</div>
+                    <div class="label">For Sale</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">${rentCount}</div>
+                    <div class="label">For Rent</div>
+                </div>
+                <div class="stat-card">
+                    <div class="number">${formatPrice(avgPrice)}</div>
+                    <div class="label">Average Price</div>
+                </div>
+            `;
+
+            // Group by location
+            const locationMap = {};
+            filtered.forEach(listing => {
+                const loc = extractLocation(listing);
+                if (!locationMap[loc]) {
+                    locationMap[loc] = { listings: [], prices: [] };
+                }
+                locationMap[loc].listings.push(listing);
+                const price = parsePrice(listing.price);
+                if (price > 0) locationMap[loc].prices.push(price);
+            });
+
+            // Sort by count
+            const sortedLocations = Object.entries(locationMap)
+                .sort((a, b) => b[1].listings.length - a[1].listings.length);
+
+            const maxCount = sortedLocations.length > 0 ? sortedLocations[0][1].listings.length : 1;
+
+            // Render location cards
+            const grid = document.getElementById('locationGrid');
+            grid.innerHTML = sortedLocations.map(([loc, data]) => {
+                const minPrice = data.prices.length > 0 ? Math.min(...data.prices) : 0;
+                const maxPrice = data.prices.length > 0 ? Math.max(...data.prices) : 0;
+                const percentage = (data.listings.length / maxCount) * 100;
+
+                return `
+                    <div class="location-card" onclick="showListings('${loc.replace(/'/g, "\\'")}')">
+                        <div class="location-name">${loc}</div>
+                        <div class="price-range">
+                            <div>
+                                <div class="price-label">Min Price</div>
+                                <div class="price-value">${formatPrice(minPrice)}</div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div class="price-label">Max Price</div>
+                                <div class="price-value">${formatPrice(maxPrice)}</div>
+                            </div>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="fill" style="width: ${percentage}%"></div>
+                        </div>
+                        <span class="count-badge">${data.listings.length} listing${data.listings.length > 1 ? 's' : ''}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showListings(location) {
+            const filtered = currentFilter === 'all'
+                ? allListings
+                : allListings.filter(l => l.listing_type === currentFilter);
+
+            const listings = filtered.filter(l => extractLocation(l) === location);
+
+            document.getElementById('modalTitle').textContent = `${location} (${listings.length} listings)`;
+
+            const grid = document.getElementById('listingsGrid');
+            grid.innerHTML = listings.map(listing => {
+                const imageUrl = listing.images && listing.images.length > 0
+                    ? listing.images[0]
+                    : null;
+
+                const specs = listing.specs || {};
+
+                return `
+                    <div class="listing-card">
+                        <div class="image-container">
+                            ${imageUrl
+                        ? `<img src="${imageUrl}" alt="Property" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>No image</div>'">`
+                        : '<div class="no-image">No image available</div>'}
+                        </div>
+                        <div class="info">
+                            <span class="type-badge ${listing.listing_type}">${listing.listing_type === 'sale' ? 'For Sale' : 'For Rent'}</span>
+                            <div class="price">${listing.price || 'Price not listed'}</div>
+                            <div class="title">${listing.title}</div>
+                            <div class="specs">
+                                ${specs.bedrooms ? `<span>🛏️ ${specs.bedrooms} beds</span>` : ''}
+                                ${specs.bathrooms ? `<span>🚿 ${specs.bathrooms} baths</span>` : ''}
+                                ${specs.area ? `<span>📐 ${specs.area} m²</span>` : ''}
+                            </div>
+                            <a href="${listing.url}" target="_blank" class="view-btn">View Details →</a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('modalOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            document.getElementById('modalOverlay').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // Close modal on overlay click
+        document.getElementById('modalOverlay').addEventListener('click', (e) => {
+            if (e.target.id === 'modalOverlay') {
+                closeModal();
+            }
+        });
+
+        // Filter tabs
+        document.querySelectorAll('.filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                currentFilter = tab.dataset.filter;
+                processData();
+            });
+        });
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Load data on page load
+        loadData();
+    </script>
+</body>
+
+</html>
