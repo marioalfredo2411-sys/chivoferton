@@ -97,16 +97,100 @@ def parse_specs(soup):
 def parse_details(soup):
     """Extract additional details as key-value pairs."""
     details = {}
+    
+    # Pattern 1: Look for detail-label with nested p tag
+    # <div class="d3-property-details__detail-label">Localización<p class="d3-property-details__detail">La Libertad</p></div>
+    for label_el in soup.select(".d3-property-details__detail-label"):
+        label = ""
+        value = ""
+        # Get the label text (direct text node, not nested)
+        for child in label_el.children:
+            if isinstance(child, str):
+                label = child.strip()
+                break
+            elif hasattr(child, 'name') and child.name is None:
+                label = str(child).strip()
+                break
+        if not label:
+            label = label_el.get_text(strip=True)
+        
+        # Get value from nested p tag
+        value_el = label_el.select_one("p.d3-property-details__detail")
+        if value_el:
+            value = value_el.get_text(strip=True)
+        else:
+            # Fallback: get sibling or remaining text
+            full_text = label_el.get_text(strip=True)
+            value = full_text.replace(label, "", 1).strip()
+        
+        if label and value:
+            # Clean label (remove trailing characters)
+            label = label.rstrip(':')
+            details[label] = value
+    
+    # Pattern 2: Standard detail items
     for item in soup.select(".d3-property-details__detail"):
+        if item.parent and 'd3-property-details__detail-label' in item.parent.get('class', []):
+            continue  # Already handled above
         label_el = item.select_one(".d3-property-details__detail-label")
         if label_el:
-            label = label_el.get_text(strip=True)
-            # Value is the remaining text after the label
+            label = label_el.get_text(strip=True).rstrip(':')
             full_text = item.get_text(strip=True)
             value = full_text.replace(label, "", 1).strip()
-            if label and value:
+            if label and value and label not in details:
                 details[label] = value
+    
     return details
+
+
+def parse_location(soup):
+    """Extract location from multiple possible sources."""
+    
+    # Method 1: Look for pin icon and get adjacent text
+    # <svg class="d3-icon d3-ad-tile__location-icon">...</svg> followed by location text
+    pin_icon = soup.select_one("svg.d3-ad-tile__location-icon, svg[class*='location-icon']")
+    if pin_icon:
+        # Get the parent and find location text
+        parent = pin_icon.parent
+        if parent:
+            location_text = parent.get_text(strip=True)
+            if location_text:
+                return location_text
+    
+    # Method 2: Look for Localización in detail labels with nested p
+    for label_el in soup.select(".d3-property-details__detail-label"):
+        label_text = ""
+        for child in label_el.children:
+            if isinstance(child, str):
+                label_text = child.strip()
+                break
+        if not label_text:
+            label_text = label_el.get_text(strip=True)
+        
+        if "localización" in label_text.lower() or "ubicación" in label_text.lower():
+            value_el = label_el.select_one("p.d3-property-details__detail")
+            if value_el:
+                return value_el.get_text(strip=True)
+    
+    # Method 3: Look for .d3-location class
+    location_el = soup.select_one(".d3-location")
+    if location_el:
+        return location_el.get_text(strip=True)
+    
+    # Method 4: Look for location class
+    location_el = soup.select_one(".location")
+    if location_el:
+        return location_el.get_text(strip=True)
+    
+    # Method 5: Extract from title (format: "... en Location")
+    title_el = soup.select_one("h1") or soup.select_one("title")
+    if title_el:
+        title = title_el.get_text(strip=True)
+        match = re.search(r'en\s+([^|]+)$', title, re.IGNORECASE)
+        if match:
+            return match.group(1).strip()
+    
+    return ""
 
 
 def parse_images(soup):
@@ -176,12 +260,10 @@ def scrape_listing(url, listing_type):
         # Details (contains Localización and Publicado)
         details = parse_details(soup)
         
-        # Extract Location from details (Localización)
-        location = details.get("Localización", "")
+        # Extract Location using dedicated parser
+        location = parse_location(soup)
         if not location:
-            # Fallback to DOM element
-            location_el = soup.select_one(".d3-location") or soup.select_one(".location")
-            location = location_el.get_text(strip=True) if location_el else ""
+            location = details.get("Localización", "")
         
         # Extract Publication Date from details (Publicado)
         published_date = details.get("Publicado", "")
